@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+  }
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  .section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #fff;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  .section h2 {
+    margin-top: 0;
+  }
+  .user-list {
+    list-style-type: none;
+    padding: 0;
+  }
+  .user-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 3px;
+  }
+  .user-list button {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 3px;
+    color: #fff;
+    cursor: pointer;
+  }
+  .user-list button.unblock {
+    background-color: #2ecc71;
+  }
+  .user-list button.remove-favorite {
+    background-color: #e74c3c;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="section">
+    <h2>Заблокированные пользователи:</h2>
+    <ul id="blacklist" class="user-list">
+      <!-- Здесь будут отображаться заблокированные пользователи -->
+    </ul>
+  </div>
+  <div class="section">
+    <h2>Фаворитные сообщения:</h2>
+    <ul id="favorites" class="user-list">
+      <!-- Здесь будут отображаться фаворитные сообщения -->
+    </ul>
+  </div>
+</div>
+
+<script>
+  // Функция для отправки AJAX-запроса на ваш сервер
+  function sendRequest(url, method, data, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open(method, url, true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState === 4 && xhr.status === 200) {
+        callback(JSON.parse(xhr.responseText));
+      }
+    };
+    xhr.send(JSON.stringify(data));
+  }
+
+  // Функция для обновления списка заблокированных пользователей
+  function updateBlacklist() {
+    sendRequest('/getBlacklist', 'GET', null, function(data) {
+      var blacklist = document.getElementById('blacklist');
+      blacklist.innerHTML = '';
+      data.forEach(function(userId) {
+        var li = document.createElement('li');
+        li.textContent = 'User ' + userId;
+        var unblockButton = document.createElement('button');
+        unblockButton.textContent = 'Разблокировать';
+        unblockButton.className = 'unblock';
+        unblockButton.onclick = function() {
+          unblockUser(userId);
+        };
+        li.appendChild(unblockButton);
+        blacklist.appendChild(li);
+      });
+    });
+  }
+
+  // Функция для обновления списка фаворитов
+  function updateFavorites() {
+    sendRequest('/getFavorites', 'GET', null, function(data) {
+      var favorites = document.getElementById('favorites');
+      favorites.innerHTML = '';
+      data.forEach(function(messageId) {
+        var li = document.createElement('li');
+        li.textContent = 'Message ' + messageId;
+        var removeButton = document.createElement('button');
+        removeButton.textContent = 'Удалить из фаворитов';
+        removeButton.className = 'remove-favorite';
+        removeButton.onclick = function() {
+          removeFavorite(messageId);
+        };
+        li.appendChild(removeButton);
+        favorites.appendChild(li);
+      });
+    });
+  }
+
+  // Функция для разблокировки пользователя
+  function unblockUser(userId) {
+    sendRequest('/unblockUser', 'POST', { userId: userId }, function(data) {
+      if (data.success) {
+        updateBlacklist();
+      }
+    });
+  }
+
+  // Функция для удаления сообщения из фаворитов
+  function removeFavorite(messageId) {
+    sendRequest('/removeFavorite', 'POST', { messageId: messageId }, function(data) {
+      if (data.success) {
+        updateFavorites();
+      }
+    });
+  }
+
+  // Обновление списков при загрузке страницы
+  updateBlacklist();
+  updateFavorites();
+</script>
+</body>
+</html>
